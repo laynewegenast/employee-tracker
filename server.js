@@ -179,7 +179,7 @@ addEmployee = () => {
     inquirer.prompt([
         {
           type: 'input',
-          name: 'fistName',
+          name: 'firstName',
           message: "Please enter employee's first name",
           validate: addFirst => {
             if (addFirst) {
@@ -202,12 +202,66 @@ addEmployee = () => {
                 return false;
             }
           }
-        }
-      ])
+        },
+        {
+            type: 'input',
+            name: 'roleId',
+            message: "Please enter employee's role ID",
+            validate: addRoleId => {
+              if (addRoleId) {
+                  return true;
+              } else {
+                  console.log('Please enter a role ID');
+                  return false;
+              }
+            }
+          },
+          {
+            type: 'input',
+            name: 'managerId',
+            message: "Please enter the employee's manager's ID",
+            validate: addManId => {
+              if (addManId) {
+                  return true;
+              } else {
+                  console.log('Please enter a manager ID');
+                  return false;
+              }
+            }
+          }
+      ]).then(response => {
+        console.log('Adding new employee...\n');
+        const sql = "INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES(?,?,?,?)"
+        connection.query(sql, [response.firstName, response.lastName, response.roleId, response.managerId ],(err, rows) => {
+            if (err) throw err;
+            console.table(rows);
+            promptUser();
+        });
+    })
+
 
 };
 
 updateEmpRole = () => {
+    const employeeTbl = `SELECT * FROM  employee`;
 
+    connection.query(employeeTbl, (err, data) => {
+        if (err) throw err;
+
+        const employees = data.map(({id, first_name, last_name}) => ({name: first_name + " " + last_name, value: id}));
+
+        inquirer.prompt([
+            {
+                type: 'list',
+                name: 'name',
+                message: "Please choose an employee to update.",
+                choices: employees
+            }
+        ]).then(updateEmp => {
+            const employee = updateEmp.name;
+            const params = [];
+            params.push(employee);
+        })
+    })
 };
 
