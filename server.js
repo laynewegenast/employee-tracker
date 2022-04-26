@@ -1,6 +1,6 @@
 const inquirer = require('inquirer');
 const mysql = require('mysql2');
-const consoleTable = require('console.table');
+require('console.table');
 
 require('dotenv').config();
 
@@ -11,8 +11,12 @@ const connection = mysql.createConnection({
     database: 'employee_tracker_db'
 });
 
+connection.connect(function(){
+    console.log("Employee Tracker");
+    promptUser()
+})
 const promptUser = () => {
-    inpuirer.prompt([
+    inquirer.prompt([
         {
             type: 'list',
             name: 'choices',
@@ -24,7 +28,8 @@ const promptUser = () => {
                 'Add a department',
                 'Add a role',
                 'Add an employee',
-                'Update an employee role'
+                'Update an employee role',
+                'Quit'
             ]
         }
     ]).then((selection) => {
@@ -50,6 +55,10 @@ const promptUser = () => {
         if (choices === "Update an employee role") {
             updateEmpRole();
         }
+        if (choices === "Quit") {
+            connection.end()
+            process.exit(0)
+        }
     });
 };
 
@@ -57,7 +66,7 @@ viewDepartments = () => {
     console.log('Viewing all departments...\n');
     const sql = `SELECT department.id AS id, department.name AS department FROM department`;
 
-    connection.promise().query(sql, (err, rows) => {
+    connection.query(sql, (err, rows) => {
         if (err) throw err;
         console.table(rows);
         promptUser();
@@ -66,13 +75,25 @@ viewDepartments = () => {
 
 viewRoles = () => {
     console.log('Viewing all roles...\n');
+    const sql = `select a.id,a.title,a.salary,a.department_id,b.name from roles a,department b where a.department_id = b.id;`;
 
-    // const sql = 
+    connection.query(sql, (err, rows) => {
+        if (err) throw err;
+        console.table(rows);
+        promptUser();
+    });
 
 };
 
 viewEmployees = () => {
-    console.log('Viewing all employees...\n')
+    console.log('Viewing all employees...\n');
+    const sql = `select a.id,a.first_name,a.last_name,a.role_id,a.manager_id,b.title,b.salary from employee a, roles b where a.role_id=b.id;`;
+
+    connection.query(sql, (err, rows) => {
+        if (err) throw err;
+        console.table(rows);
+        promptUser();
+    });
 };
 
 addDepartment = () => {
@@ -90,7 +111,15 @@ addDepartment = () => {
                 }
             }
         }
-    ])
+    ]).then(response => {
+        console.log('Adding new department...\n');
+        const sql = "INSERT INTO department (name) VALUES(?)"
+        connection.query(sql, response.newDept ,(err, rows) => {
+            if (err) throw err;
+            console.table(rows);
+            promptUser();
+        });
+    })
 };
 
 addRole = () => {
@@ -107,15 +136,78 @@ addRole = () => {
                     return false;
                 }
             }
+        },
+        {
+            type: 'input',
+            name: 'newRoleSalary',
+            message: "What is the salary of this role?",
+            validate: newRoleSalary => {
+                if (newRoleSalary) {
+                    return true;
+                } else {
+                    console.log('Please enter a salary');
+                    return false;
+                }
+            }
+        },
+        {
+            type: 'input',
+            name: 'newRoleDept',
+            message: "What department ID does this role belong to?",
+            validate: newRoleDept => {
+                if (newRoleDept) {
+                    return true;
+                } else {
+                    console.log('Please enter a department ID');
+                    return false;
+                }
+            }
         }
-    ])
+    ]).then(response => {
+        console.log('Adding new role...\n');
+        const sql = "INSERT INTO roles (title, salary, department_id) VALUES(?,?,?)"
+        connection.query(sql, [response.newRole, response.newRoleSalary, response.newRoleDept ],(err, rows) => {
+            if (err) throw err;
+            console.table(rows);
+            promptUser();
+        });
+    })
 
 };
 
 addEmployee = () => {
+    inquirer.prompt([
+        {
+          type: 'input',
+          name: 'fistName',
+          message: "Please enter employee's first name",
+          validate: addFirst => {
+            if (addFirst) {
+                return true;
+            } else {
+                console.log('Please enter a first name');
+                return false;
+            }
+          }
+        },
+        {
+          type: 'input',
+          name: 'lastName',
+          message: "Please enter employee's last name",
+          validate: addLast => {
+            if (addLast) {
+                return true;
+            } else {
+                console.log('Please enter a last name');
+                return false;
+            }
+          }
+        }
+      ])
 
 };
 
 updateEmpRole = () => {
 
 };
+
