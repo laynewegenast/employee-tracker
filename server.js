@@ -261,6 +261,38 @@ updateEmpRole = () => {
             const employee = updateEmp.name;
             const params = [];
             params.push(employee);
+
+            const updatedRole = `SELECT * FROM roles`;
+            connection.query(updatedRole, (err, data) => {
+                if (err) throw err;
+
+                const roles = data.map(({id, title}) => ({name: title, value: id}));
+                
+                inquirer.prompt([
+                    {
+                        type: 'list',
+                        name: 'role',
+                        message: 'Please select a new role.',
+                        choices: roles
+                    }
+                ]).then(selectedRole => {
+                    const role = selectedRole.role;
+                    params.push(role);
+
+                    let employee = params[0]
+                    params[0] = role
+                    params [1] = employee
+
+                    const sql = `UPDATE employee SET role_id = ? WHERE id = ?`;
+
+                    connection.query(sql, params, (err, results) => {
+                        if (err) throw err;
+                        console.log("employee update successful");
+
+                        viewEmployees();
+                    })
+                })
+            })
         })
     })
 };
